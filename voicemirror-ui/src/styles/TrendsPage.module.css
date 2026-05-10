@@ -1,0 +1,251 @@
+.root {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .hero { text-align: center; margin-bottom: 4px; }
+  .heroLabel {
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    color: var(--c7);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+  }
+  .heroLabel::before,
+  .heroLabel::after {
+    content: '';
+    width: 40px; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--c5));
+  }
+  .heroLabel::after { background: linear-gradient(90deg, var(--c5), transparent); }
+  .heroTitle {
+    font-size: clamp(30px, 5vw, 44px);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    margin-bottom: 10px;
+  }
+  .heroAccent {
+    background: linear-gradient(135deg, var(--c9), var(--c11), var(--c7));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .heroSub { font-size: 13px; color: var(--text-muted); letter-spacing: 0.08em; }
+  
+  .statsGrid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+  }
+  @media (max-width: 640px) {
+    .statsGrid { grid-template-columns: 1fr 1fr; }
+  }
+  
+  .statCard {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    padding: 20px 18px;
+    backdrop-filter: blur(16px);
+    transition: border-color 0.22s;
+  }
+  .statCard:hover { border-color: var(--border-hi); }
+  .statLabel {
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+  }
+  .statValue {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--stat-color, var(--c7));
+    margin-bottom: 4px;
+    line-height: 1.2;
+  }
+  .statSub { font-size: 11px; color: var(--text-muted); letter-spacing: 0.08em; }
+  
+  .insightCard {
+    background: var(--bg-card);
+    border: 1px solid rgba(91,127,255,0.3);
+    border-radius: var(--r-lg);
+    padding: 24px 28px;
+    backdrop-filter: blur(16px);
+    box-shadow: 0 0 30px rgba(91,127,255,0.06);
+  }
+  .insightTitle {
+    font-size: 11px;
+    letter-spacing: 0.28em;
+    color: var(--c7);
+    margin-bottom: 18px;
+  }
+  .insightGrid { display: flex; flex-direction: column; gap: 10px; }
+  .insightRow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .insightEmoji { font-size: 16px; width: 22px; text-align: center; }
+  .insightName {
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    color: var(--text-dim);
+    width: 60px;
+    flex-shrink: 0;
+  }
+  .insightBar {
+    flex: 1;
+    height: 4px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .insightFill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 1s cubic-bezier(0.4,0,0.2,1);
+    opacity: 0.85;
+  }
+  .insightPct {
+    font-size: 11px;
+    width: 36px;
+    text-align: right;
+    font-family: 'Space Mono', monospace;
+  }
+  
+  .chartCard {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    padding: 24px 28px;
+    backdrop-filter: blur(16px);
+  }
+  .chartHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .chartTitle { font-size: 11px; letter-spacing: 0.28em; color: var(--text-muted); }
+  
+  .controls { display: flex; gap: 8px; flex-wrap: wrap; }
+  .ctrlGroup {
+    display: flex;
+    gap: 2px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 8px;
+    padding: 3px;
+    border: 1px solid var(--border);
+  }
+  .ctrlBtn {
+    padding: 5px 12px;
+    border-radius: 6px;
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    color: var(--text-muted);
+    background: transparent;
+    transition: all 0.2s;
+  }
+  .ctrlBtn:hover { color: var(--text-dim); }
+  .ctrlActive {
+    background: linear-gradient(135deg, var(--c5), var(--c6));
+    color: #fff !important;
+    box-shadow: 0 2px 10px rgba(91,127,255,0.3);
+  }
+  
+  .chartArea { padding: 4px 0; }
+  
+  .tooltip {
+    background: rgba(8,13,40,0.95);
+    border: 1px solid var(--border-hi);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-family: 'Josefin Sans', sans-serif;
+  }
+  .tooltipDate {
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+  .tooltipRow {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-bottom: 3px;
+  }
+  
+  .emptyChart {
+    height: 200px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .emptyIcon { font-size: 28px; color: var(--text-muted); opacity: 0.4; }
+  .emptyTxt { font-size: 13px; letter-spacing: 0.14em; color: var(--text-muted); }
+  .emptySub { font-size: 11px; color: rgba(170,197,255,0.25); letter-spacing: 0.1em; }
+  
+  .entriesCard {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    padding: 24px 28px;
+    backdrop-filter: blur(16px);
+  }
+  .entriesTitle {
+    font-size: 11px;
+    letter-spacing: 0.28em;
+    color: var(--text-muted);
+    margin-bottom: 18px;
+  }
+  .emptyEntries {
+    font-size: 13px;
+    color: var(--text-muted);
+    letter-spacing: 0.08em;
+    text-align: center;
+    padding: 20px 0;
+  }
+  .entriesList { display: flex; flex-direction: column; gap: 2px; }
+  
+  .entryRow {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    transition: background 0.2s;
+  }
+  .entryRow:hover { background: rgba(91,127,255,0.05); }
+  .entryEmoji { font-size: 18px; width: 28px; text-align: center; }
+  .entryInfo { flex: 1; }
+  .entryEmotion { font-size: 12px; font-weight: 600; letter-spacing: 0.16em; }
+  .entryDate { font-size: 11px; color: var(--text-muted); margin-top: 2px; letter-spacing: 0.08em; }
+  .entryConf {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-family: 'Space Mono', monospace;
+    width: 34px;
+    text-align: right;
+  }
+  .entryBar {
+    display: flex;
+    gap: 2px;
+    width: 60px;
+    height: 4px;
+    border-radius: 2px;
+    overflow: hidden;
+    background: rgba(255,255,255,0.04);
+  }
+  .entryMini { height: 100%; border-radius: 1px; opacity: 0.7; }

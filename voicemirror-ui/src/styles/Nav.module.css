@@ -1,0 +1,99 @@
+.nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 40px;
+    height: 64px;
+    background: rgba(5, 8, 26, 0.75);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border-bottom: 1px solid rgba(91,127,255,0.14);
+  }
+  
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+  }
+  .logoIcon {
+    font-size: 20px;
+    color: var(--c7);
+    animation: spin 12s linear infinite;
+    display: inline-block;
+  }
+  .logoText {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 0.25em;
+    color: var(--text);
+  }
+  .logoAccent {
+    color: var(--c7);
+  }
+  
+  .tabs {
+    display: flex;
+    gap: 2px;
+    background: rgba(255,255,255,0.04);
+    padding: 4px;
+    border-radius: 12px;
+    border: 1px solid rgba(91,127,255,0.14);
+  }
+  
+  .tab {
+    position: relative;
+    padding: 7px 22px;
+    border-radius: 9px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    color: var(--text-muted);
+    background: transparent;
+    transition: all 0.22s;
+  }
+  .tab:hover { color: var(--text-dim); }
+  .tab.active {
+    background: linear-gradient(135deg, var(--c5), var(--c6));
+    color: #fff;
+    box-shadow: 0 4px 18px rgba(91,127,255,0.35);
+  }
+  
+  .tabDot {
+    position: absolute;
+    bottom: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.6);
+  }
+  
+  .status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .statusDot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #4dffa0;
+    box-shadow: 0 0 8px #4dffa0;
+    animation: pulse 2s ease-in-out infinite;
+  }
+  .statusText {
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    color: rgba(77,255,160,0.7);
+  }
+  
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  @keyframes pulse {
+    0%,100% { opacity: 1; }
+    50%      { opacity: 0.4; }
+  }

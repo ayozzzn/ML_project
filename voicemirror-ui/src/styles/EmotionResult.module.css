@@ -1,0 +1,169 @@
+.root {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    animation: fadeUp 0.5s cubic-bezier(0.4,0,0.2,1) both;
+  }
+  
+  .hero {
+    position: relative;
+    border-radius: var(--r-xl);
+    overflow: hidden;
+    padding: 40px 32px;
+    background: var(--bg-card);
+    border: 1px solid rgba(var(--em-color, 91,127,255), 0.3);
+    text-align: center;
+  }
+  .heroGlow {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 50% 0%, rgba(255,255,255,0.06) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .heroInner { position: relative; z-index: 1; }
+  
+  .emoji { font-size: 56px; margin-bottom: 14px; display: block; }
+  .emotionName {
+    font-size: 38px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    color: var(--em-color, var(--c7));
+    margin-bottom: 6px;
+  }
+  .emotionDesc {
+    font-size: 13px;
+    letter-spacing: 0.15em;
+    color: var(--text-muted);
+    margin-bottom: 24px;
+  }
+  
+  .confidence {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+  }
+  .confBar {
+    width: 160px;
+    height: 4px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 2px;
+    overflow: hidden;
+    display: block;
+  }
+  .confFill {
+    display: block;
+    height: 100%;
+    border-radius: 2px;
+    animation: barFill 1.2s cubic-bezier(0.4,0,0.2,1) both 0.3s;
+  }
+  .confNum {
+    font-size: 12px;
+    color: var(--text-muted);
+    letter-spacing: 0.12em;
+    white-space: nowrap;
+  }
+  
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    padding: 24px 28px;
+    backdrop-filter: blur(16px);
+  }
+  .card:hover { border-color: var(--border-hi); }
+  
+  .cardLabel {
+    font-size: 11px;
+    letter-spacing: 0.28em;
+    color: var(--text-muted);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .shap {
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    padding: 2px 7px;
+    border-radius: 4px;
+    background: rgba(91,127,255,0.15);
+    border: 1px solid rgba(91,127,255,0.3);
+    color: var(--c8);
+  }
+  
+  .probList { display: flex; flex-direction: column; gap: 10px; }
+  
+  .probRow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .probEmoji { font-size: 16px; width: 22px; text-align: center; flex-shrink: 0; }
+  .probName {
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    color: var(--text-dim);
+    width: 62px;
+    flex-shrink: 0;
+  }
+  .probTrack {
+    flex: 1;
+    height: 5px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .probFill {
+    height: 100%;
+    border-radius: 3px;
+    animation: barFill 1s cubic-bezier(0.4,0,0.2,1) both;
+    opacity: 0.85;
+  }
+  .probPct {
+    font-size: 12px;
+    color: var(--text-muted);
+    width: 32px;
+    text-align: right;
+    flex-shrink: 0;
+    font-family: 'Space Mono', monospace;
+  }
+  
+  .explList { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
+  
+  .explRow {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .explDot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    margin-top: 5px;
+    flex-shrink: 0;
+    box-shadow: 0 0 8px currentColor;
+  }
+  .explText {
+    font-size: 14px;
+    color: var(--text-dim);
+    line-height: 1.6;
+    letter-spacing: 0.04em;
+  }
+  
+  .shapNote {
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 0.05em;
+    line-height: 1.6;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+  }
+  
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes barFill {
+    from { width: 0 !important; }
+  }

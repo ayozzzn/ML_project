@@ -1,0 +1,75 @@
+.root {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+  }
+  
+  .orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(90px);
+    will-change: transform;
+  }
+  
+  .orb1 {
+    width: 520px; height: 520px;
+    background: radial-gradient(circle, rgba(43,68,200,0.28) 0%, transparent 70%);
+    top: -160px; left: -160px;
+    animation: drift1 14s ease-in-out infinite;
+  }
+  .orb2 {
+    width: 380px; height: 380px;
+    background: radial-gradient(circle, rgba(91,127,255,0.22) 0%, transparent 70%);
+    bottom: 60px; right: -80px;
+    animation: drift2 18s ease-in-out infinite;
+  }
+  .orb3 {
+    width: 260px; height: 260px;
+    background: radial-gradient(circle, rgba(122,171,255,0.16) 0%, transparent 70%);
+    top: 45%; left: 42%;
+    animation: drift3 22s ease-in-out infinite;
+  }
+  .orb4 {
+    width: 180px; height: 180px;
+    background: radial-gradient(circle, rgba(201,108,255,0.12) 0%, transparent 70%);
+    top: 20%; right: 15%;
+    animation: drift1 26s ease-in-out infinite reverse;
+  }
+  
+  .grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(91,127,255,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(91,127,255,0.04) 1px, transparent 1px);
+    background-size: 60px 60px;
+  }
+  
+  .scanline {
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.03) 2px,
+      rgba(0,0,0,0.03) 4px
+    );
+  }
+  
+  @keyframes drift1 {
+    0%,100% { transform: translate(0,0) scale(1); }
+    33%      { transform: translate(70px,-50px) scale(1.07); }
+    66%      { transform: translate(-40px,35px) scale(0.94); }
+  }
+  @keyframes drift2 {
+    0%,100% { transform: translate(0,0) scale(1); }
+    50%      { transform: translate(-60px,-70px) scale(1.1); }
+  }
+  @keyframes drift3 {
+    0%,100% { transform: translate(0,0); }
+    40%      { transform: translate(50px,60px); }
+    80%      { transform: translate(-30px,20px); }
+  }

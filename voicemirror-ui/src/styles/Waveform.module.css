@@ -1,0 +1,16 @@
+.container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    height: 72px;
+    padding: 0 16px;
+  }
+  
+  .bar {
+    width: 3px;
+    border-radius: 2px;
+    background: linear-gradient(180deg, var(--c8), var(--c5));
+    transition: height 0.07s ease, opacity 0.3s ease;
+    flex-shrink: 0;
+  }

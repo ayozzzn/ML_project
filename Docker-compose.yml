@@ -1,0 +1,41 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./models:/app/models
+      - ./processed:/app/processed
+      - ./src:/app/src
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: uvicorn src.api:app --host 0.0.0.0 --port 8000 --reload
+
+  streamlit:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./models:/app/models
+      - ./processed:/app/processed
+      - ./src:/app/src
+      - ./app.py:/app/app.py
+    depends_on:
+      - api
+    environment:
+      - PYTHONUNBUFFERED=1
+
+  frontend:
+    build:
+      context: ./voicemirror-ui
+      dockerfile: Dockerfile.frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - api
+    environment:
+      - VITE_API_URL=http://localhost:8000
