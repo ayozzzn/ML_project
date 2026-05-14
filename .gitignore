@@ -104,3 +104,6 @@ models/*.bin
 models/*.safetensors
 models/wav2vec2_emotion/
 models/*.png
+mlruns/
+mlflow_runs/
+register_models.py
