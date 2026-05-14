@@ -3,6 +3,7 @@ import librosa
 import noisereduce as nr
 import joblib
 import torch
+import time
 from pathlib import Path
 from typing import Tuple, Dict, List, Optional
 
@@ -74,13 +75,50 @@ def extract_features(y: np.ndarray, sr: int = SAMPLE_RATE) -> Dict[str, float]:
     return features
 
 
+# ─── Fallback responses без LLM ────────────────────────────────────────────────
+
+FALLBACK_RESPONSES = {
+    "sad": {
+        "response": "Мне жаль, что тебе сейчас грустно. Расскажи подробнее — я здесь, чтобы выслушать и поддержать. 💙",
+        "quote": "🌧️ *«И это пройдёт. Боль не навсегда.»* — Соломон",
+        "grounding": "🤲 Положи руку на сердце. Скажи мысленно: «Я здесь. Я с тобой. Всё будет хорошо». Побудь так 30 секунд.",
+    },
+    "anxiety": {
+        "response": "Тревога может быть очень тяжёлой. Но сейчас, в этом моменте, ты в безопасности. Давай попробуем подышать вместе? 🌊",
+        "quote": "🌊 *«Тревога — это волна. Она накатывает, но ты всё ещё стоишь на берегу.»*",
+        "grounding": "🌬️ Вдохни носом на 4 счёта → задержи на 4 → выдохни ртом на 6. Повтори 3 раза.",
+    },
+    "angry": {
+        "response": "Я слышу твоё раздражение. Ты имеешь на него полное право. Хочешь рассказать, что тебя задело? 🔥",
+        "quote": "🔥 *«Гнев — это письмо. Прочитай его, но не нужно отвечать сразу.»*",
+        "grounding": "💨 Сделай резкий выдох ртом — «ХА». Потом глубокий вдох носом. Повтори 5 раз.",
+    },
+    "happy": {
+        "response": "Я так рад, что ты делишься этой радостью! Расскажи ещё — что именно сделало твой день лучше? ✨",
+        "quote": "🌟 *«Счастье заразительно. Поделись им — оно умножится.»*",
+        "grounding": None,
+    },
+    "calm": {
+        "response": "Это прекрасное состояние. Посиди в нём ещё немного. Ты заслужил этот покой. 🧘",
+        "quote": "🧘 *«Тишина — это не пустота. Это наполненность собой.»*",
+        "grounding": None,
+    },
+    "neutral": {
+        "response": "Спасибо, что делишься. Как ты себя чувствуешь прямо сейчас, в теле, в мыслях? 🌿",
+        "quote": "🌿 *«Иногда не чувствовать ничего — тоже чувство. Дай ему место.»*",
+        "grounding": None,
+    },
+}
+
+
 class MindVoicePredictor:
 
     def __init__(self):
         self.use_wav2vec = False
         self.ai_psychologist = None
         self._load_models()
-        self._load_ai_psychologist()
+        # ✅ Не загружаем LLM при старте — только по запросу
+        self._try_load_ai_psychologist()
 
     def _load_models(self):
         self.scaler = joblib.load(MODELS_DIR / "scaler.pkl")
@@ -112,19 +150,25 @@ class MindVoicePredictor:
                 self.use_wav2vec = True
                 print("✅ Wav2Vec2 loaded")
             else:
-                print("ℹ️  Wav2Vec2 model folder not found — using GBM fallback")
+                print("ℹ️  Wav2Vec2 not found — using GBM")
         except Exception as e:
             print(f"⚠️  Wav2Vec2 not available: {e}")
 
-    def _load_ai_psychologist(self):
+    def _try_load_ai_psychologist(self):
+        """
+        Пробуем загрузить LLM. Если не получается — молча
+        продолжаем с fallback-ответами. Не блокируем старт.
+        """
         try:
             from src.ai_therapist import AIPsychologist
             self.ai_psychologist = AIPsychologist()
             print("✅ AI Psychologist ready")
         except Exception as e:
-            print(f"⚠️ AI Psychologist not available: {e}")
+            print(f"ℹ️  AI Psychologist unavailable (will use fallback): {e}")
+            self.ai_psychologist = None
 
     def predict(self, audio_path: str) -> Dict:
+        t0 = time.time()
         y, sr = librosa.load(audio_path, sr=SAMPLE_RATE, mono=True)
         y = preprocess_audio(y, sr)
 
@@ -132,7 +176,6 @@ class MindVoicePredictor:
             return {"error": "Audio too short. Please record at least 1 second."}
 
         raw_features = extract_features(y, sr)
-
         feat_vector = np.array(
             [raw_features.get(c, 0.0) for c in self.feature_cols],
             dtype=np.float32
@@ -141,6 +184,7 @@ class MindVoicePredictor:
 
         if self.use_wav2vec:
             emotion, probs = self._predict_wav2vec(y)
+            model_used = "wav2vec2"
         else:
             probs_raw = self.gbm.predict_proba(feat_scaled)[0]
             pred_idx = int(np.argmax(probs_raw))
@@ -149,52 +193,76 @@ class MindVoicePredictor:
                 cls: float(p)
                 for cls, p in zip(self.label_encoder.classes_, probs_raw)
             }
+            model_used = "gbm"
 
         confidence = round(probs.get(emotion, 0.0) * 100, 1)
+        low_confidence = confidence < 40.0
         explanation = self._explain(feat_scaled[0], emotion)
+        inference_time = round(time.time() - t0, 2)
 
         return {
             "emotion": emotion,
             "probabilities": probs,
             "confidence": confidence,
+            "low_confidence": low_confidence,
             "explanation": explanation,
+            "model_used": model_used,
+            "inference_time_sec": inference_time,
         }
 
-    def predict_with_advice(self, audio_path: str, user_note: str = "", conversation_history: List[Dict] = None) -> Dict:
+    def predict_with_advice(self, audio_path: str, user_note: str = "",
+                            conversation_history: List[Dict] = None) -> Dict:
         result = self.predict(audio_path)
-        
         if "error" in result:
             return result
+
+        # ✅ Всегда используем быстрый fallback для /predict
+        # Чат с LLM доступен отдельно через /chat
+        fb = FALLBACK_RESPONSES.get(result["emotion"], FALLBACK_RESPONSES["neutral"])
         
-        advice_result = self.chat_with_therapist(
-            emotion=result["emotion"],
-            user_message=user_note if user_note else "I just recorded my voice. Can you support me?",
-            history=conversation_history
-        )
-        
-        result["advice"] = advice_result.get("response", "")
-        result["quote"] = advice_result.get("quote")
-        result["grounding"] = advice_result.get("grounding")
-        
+        # Если есть заметка пользователя — персонализируем
+        if user_note and self.ai_psychologist:
+            try:
+                advice_result = self.ai_psychologist.generate_response(
+                    emotion=result["emotion"],
+                    user_message=user_note,
+                    history=conversation_history,
+                    include_quote=True,
+                    include_grounding=True,
+                )
+                result["advice"] = advice_result.get("response", fb["response"])
+                result["quote"] = advice_result.get("quote", fb["quote"])
+                result["grounding"] = advice_result.get("grounding", fb["grounding"])
+            except Exception:
+                result["advice"] = fb["response"]
+                result["quote"] = fb["quote"]
+                result["grounding"] = fb["grounding"]
+        else:
+            result["advice"] = fb["response"]
+            result["quote"] = fb["quote"]
+            result["grounding"] = fb["grounding"]
+
         return result
 
-    def chat_with_therapist(self, emotion: str, user_message: str, history: List[Dict] = None) -> Dict:
+    def chat_with_therapist(self, emotion: str, user_message: str,
+                            history: List[Dict] = None) -> Dict:
+        """Используется эндпоинтом /chat"""
         if self.ai_psychologist:
-            return self.ai_psychologist.generate_response(emotion, user_message, history)
+            try:
+                return self.ai_psychologist.generate_response(
+                    emotion=emotion,
+                    user_message=user_message,
+                    history=history,
+                )
+            except Exception as e:
+                print(f"⚠️ LLM error in chat: {e}")
 
-        fallback_responses = {
-            "sad": "Мне жаль, что тебе сейчас грустно. Расскажи подробнее — я здесь, чтобы выслушать и поддержать. 💙",
-            "anxiety": "Тревога может быть очень тяжёлой. Но сейчас, в этом моменте, ты в безопасности. Давай попробуем подышать вместе? 🌊",
-            "angry": "Я слышу твоё раздражение. Ты имеешь на него полное право. Хочешь рассказать, что тебя задело? 🔥",
-            "happy": "Я так рад, что ты делишься этой радостью! Расскажи ещё — что именно сделало твой день лучше? ✨",
-            "calm": "Это прекрасное состояние. Посиди в нём ещё немного. Ты заслужил этот покой. 🧘",
-            "neutral": "Спасибо, что делишься. Как ты себя чувствуешь прямо сейчас, в теле, в мыслях? 🌿"
-        }
-        
+        # Fallback
+        fb = FALLBACK_RESPONSES.get(emotion.lower(), FALLBACK_RESPONSES["neutral"])
         return {
-            "response": fallback_responses.get(emotion.lower(), fallback_responses["neutral"]),
-            "quote": "✨ *Будь добр к себе сегодня*",
-            "grounding": None
+            "response": fb["response"],
+            "quote": fb["quote"],
+            "grounding": fb["grounding"],
         }
 
     def _predict_wav2vec(self, y: np.ndarray) -> Tuple[str, Dict]:
@@ -212,7 +280,8 @@ class MindVoicePredictor:
         }
         return emotion, probs
 
-    def _explain(self, feat_scaled: np.ndarray, predicted_emotion: str, top_n: int = 3) -> List[str]:
+    def _explain(self, feat_scaled: np.ndarray, predicted_emotion: str,
+                 top_n: int = 3) -> List[str]:
         sv = self.shap_explainer.shap_values(feat_scaled.reshape(1, -1))
 
         try:

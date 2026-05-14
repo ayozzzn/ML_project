@@ -2,7 +2,7 @@ import { EMOTIONS } from '../utils/storage.js'
 import s from '../styles/EmotionResult.module.css'
 
 export default function EmotionResult({ result }) {
-  const { emotion, probs, confidence, explanation } = result
+  const { emotion, probabilities: probs, confidence, explanation } = result
   const em = EMOTIONS[emotion] || EMOTIONS.neutral
 
   const sorted = Object.entries(probs)
