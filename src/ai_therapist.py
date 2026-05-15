@@ -4,18 +4,9 @@ from typing import List, Dict, Optional
 import re
 
 class AIPsychologist:
-    """
-    Нейросеть-психолог для поддержки пользователя.
-    Использует Llama 3.2 или Qwen с инструкциями.
-    """
-    
+
     def __init__(self, model_name: str = "Qwen/Qwen2.5-1.5B-Instruct"):
-        """
-        model_name: 
-            - "Qwen/Qwen2.5-1.5B-Instruct" (лучший для русского)
-            - "meta-llama/Llama-3.2-1B-Instruct" (требуется авторизация на HuggingFace)
-            - "microsoft/DialoGPT-medium" (английский, легкий)
-        """
+
         print(f"🧠 Loading AI Psychologist: {model_name}")
         
         self.device = "cuda" if torch.cuda.is_available() else "cpu"

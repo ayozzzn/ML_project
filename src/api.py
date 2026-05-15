@@ -17,11 +17,12 @@ from src.inference import MindVoicePredictor
 ALLOWED_AUDIO_EXTENSIONS = {".wav", ".mp3", ".ogg", ".flac", ".m4a", ".webm"}
 
 predictor: Optional[MindVoicePredictor] = None
+voice_therapist = None
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global predictor
+    global predictor, voice_therapist
     print("⏳ Loading MindVoice models...")
     try:
         loop = asyncio.get_event_loop()
@@ -29,14 +30,22 @@ async def lifespan(app: FastAPI):
         print("✅ Models loaded")
     except Exception as e:
         print(f"❌ Failed to load models: {e}")
+
+    # VoiceTherapist загружается отдельно (Whisper тяжёлый)
+    try:
+        from voice_therapist import VoiceTherapist
+        voice_therapist = await asyncio.get_event_loop().run_in_executor(None, VoiceTherapist)
+        print("✅ VoiceTherapist (Whisper) loaded")
+    except Exception as e:
+        print(f"ℹ️  VoiceTherapist not available: {e}")
+
     yield
-    # shutdown (если нужно что-то почистить)
 
 
 app = FastAPI(
     title="MindVoice API",
     description="Speech Emotion Recognition backend for MindVoice",
-    version="2.1.0",
+    version="2.2.0",
     lifespan=lifespan,
 )
 
@@ -55,18 +64,20 @@ app.add_middleware(
 )
 
 
+# ─── Models ────────────────────────────────────────────────────────────────────
+
 class PredictResponse(BaseModel):
     emotion: str
     probabilities: Dict[str, float]
     confidence: float
-    low_confidence: bool = False  
+    low_confidence: bool = False
     explanation: List[str]
-    model_used: Optional[str] = None  
-    inference_time_sec: float = 0.0  
+    model_used: Optional[str] = None
+    inference_time_sec: float = 0.0
     advice: Optional[str] = None
     quote: Optional[str] = None
     grounding: Optional[str] = None
-    
+
 
 class ChatRequest(BaseModel):
     emotion: str
@@ -74,9 +85,27 @@ class ChatRequest(BaseModel):
     history: List[Dict[str, str]] = []
 
 
+class VoiceChatResponse(BaseModel):
+    # Что пользователь сказал (транскрипт)
+    user_text: str
+    # Эмоция из голоса
+    emotion: str
+    confidence: float
+    emotion_probabilities: Dict[str, float]
+    # Ответ психолога
+    therapist_response: str
+    quote: Optional[str] = None
+    grounding: Optional[str] = None
+    # Метаданные сессии
+    conversation_length: int = 0
+    whisper_available: bool = False
+
+
+# ─── Routes ────────────────────────────────────────────────────────────────────
+
 @app.get("/")
 def root():
-    return {"message": "MindVoice API v2.1 — твой эмоциональный компаньон"}
+    return {"message": "MindVoice API v2.2 — твой эмоциональный компаньон"}
 
 
 @app.get("/health")
@@ -87,6 +116,7 @@ def health():
         "models_loaded": loaded,
         "wav2vec_available": loaded and getattr(predictor, "use_wav2vec", False),
         "ai_psychologist_available": loaded and predictor.ai_psychologist is not None,
+        "whisper_available": voice_therapist is not None,
     }
 
 
@@ -130,13 +160,13 @@ async def predict(file: UploadFile = File(...), note: str = ""):
         quote=result.get("quote"),
         grounding=result.get("grounding"),
         low_confidence=result.get("low_confidence", False),
-        lang_hint=result.get("lang_hint", "en"),
         inference_time_sec=result.get("inference_time_sec", 0.0),
     )
 
 
 @app.post("/chat")
 async def chat(request: ChatRequest):
+    """Текстовый чат с психологом (без голоса)."""
     if predictor is None:
         raise HTTPException(status_code=503, detail="Models not loaded")
 
@@ -150,6 +180,118 @@ async def chat(request: ChatRequest):
         )
     )
     return result
+
+
+@app.post("/voice-chat", response_model=VoiceChatResponse)
+async def voice_chat(
+    file: UploadFile = File(...),
+    language: str = "ru",
+    session_id: str = "default",
+):
+    """
+    Главный эндпоинт голосового чата с психологом.
+
+    Pipeline:
+      1. Сохраняем аудио во временный файл
+      2. ПАРАЛЛЕЛЬНО: Whisper транскрибирует речь + emotion model определяет эмоцию
+      3. LLM получает И текст И эмоцию → генерирует живой ответ психолога
+      4. Возвращаем транскрипт, эмоцию, ответ
+    """
+    if predictor is None:
+        raise HTTPException(status_code=503, detail="Models not loaded")
+
+    suffix = Path(file.filename or "audio.webm").suffix.lower()
+    if suffix not in ALLOWED_AUDIO_EXTENSIONS:
+        raise HTTPException(status_code=400, detail=f"Unsupported file type: {suffix}")
+
+    content = await file.read()
+    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+        tmp.write(content)
+        tmp_path = tmp.name
+
+    try:
+        loop = asyncio.get_event_loop()
+
+        if voice_therapist is not None:
+            # ── Полный пайплайн: Whisper + эмоция + LLM ──────────────────────
+            result = await loop.run_in_executor(
+                None,
+                lambda: voice_therapist.process_audio(tmp_path, language=language)
+            )
+
+            if "error" in result:
+                raise HTTPException(status_code=400, detail=result["error"])
+
+            return VoiceChatResponse(
+                user_text=result["user_text"],
+                emotion=result["emotion"],
+                confidence=result["confidence"],
+                emotion_probabilities=result["emotion_probabilities"],
+                therapist_response=result["therapist_response"],
+                quote=result.get("quote"),
+                grounding=result.get("grounding"),
+                conversation_length=result.get("conversation_length", 0),
+                whisper_available=True,
+            )
+
+        else:
+            # ── Fallback: только эмоция (без транскрипта) ─────────────────────
+            emotion_result = await loop.run_in_executor(
+                None,
+                lambda: predictor.predict(tmp_path)
+            )
+
+            if "error" in emotion_result:
+                raise HTTPException(status_code=400, detail=emotion_result["error"])
+
+            emotion = emotion_result["emotion"]
+
+            # Чат с психологом только на основе эмоции
+            chat_result = await loop.run_in_executor(
+                None,
+                lambda: predictor.chat_with_therapist(
+                    emotion=emotion,
+                    user_message=f"Пользователь отправил голосовое. Эмоция: {emotion}, уверенность: {emotion_result['confidence']}%. Дай поддерживающий ответ.",
+                    history=[],
+                )
+            )
+
+            return VoiceChatResponse(
+                user_text="",  # Whisper недоступен
+                emotion=emotion,
+                confidence=emotion_result["confidence"],
+                emotion_probabilities=emotion_result["probabilities"],
+                therapist_response=chat_result.get("response", "Я слышу тебя."),
+                quote=chat_result.get("quote"),
+                grounding=chat_result.get("grounding"),
+                conversation_length=0,
+                whisper_available=False,
+            )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Voice chat error: {str(e)}")
+    finally:
+        os.unlink(tmp_path)
+
+
+@app.post("/voice-chat/reset")
+async def reset_voice_session(session_id: str = "default"):
+    """Сбросить историю разговора (начать новую сессию)."""
+    if voice_therapist is not None:
+        voice_therapist.reset_conversation()
+    return {"status": "ok", "message": "Conversation reset"}
+
+
+@app.get("/voice-chat/summary")
+async def voice_session_summary(session_id: str = "default"):
+    """Получить сводку текущей сессии — доминирующая эмоция, тренд."""
+    if voice_therapist is None:
+        return {"has_history": False, "whisper_available": False}
+    summary = voice_therapist.get_conversation_summary()
+    summary["whisper_available"] = True
+    return summary
 
 
 @app.get("/emotions")
